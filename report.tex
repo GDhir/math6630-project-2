@@ -1,4 +1,4 @@
-\documentclass[12pt]{article}
+\documentclass[12pt,dvipsnames]{article}
  \usepackage[margin=1in]{geometry} 
 \usepackage{amsmath,amsthm,amssymb,amsfonts}
  \usepackage{xcolor}
@@ -60,6 +60,8 @@
 [1]% There is one argument, which is the name of the data structure
 {\textbf{struct} \textsc{#1}}% typesetting of the start of a struct
 {\textbf{end struct}}% typesetting the end of the struct
+
+\newcommand{\an}[1]{{\leavevmode\color{BrickRed}{#1}}}
 \begin{document}
 \title{Project 2: Spectral and finite volume methods}
 \author{Gaurav Dhir}
@@ -84,12 +86,15 @@ For the purposes of notational convenience, we represent the Partial Differentia
 \subsection{(a)}
 It is possible to arrive at a Semi-Discrete formulation for the Fourier Galerkin scheme for Equation \ref{eq:Q1_problem} in multiple ways.  The approaches can be summarized as the following:
 \begin{itemize}
-    \item Develop an appropriate formulation for the Fourier Basis Functions $\phi_k(x)$ where $\abs{k} \leq N$ such that the set of basis functions $\{ \phi_k(x) \}_{k = -N/2}^{N/2}$ are orthonormal with respect to the inner product defined as $<u, v> = \int_0^1 u(x) \overline{v(x)} dx$. The set of Fourier Basis functions must also satisfy $\phi_k(x + 1) = \phi_k(x)$ for all $\abs{k} \leq N$ to ensure periodicity.
+    \item Develop an appropriate formulation for the Fourier Basis Functions $\phi_k(x)$ where $\abs{k} \leq N$ such that the set of basis functions $\{ \phi_k(x) \}_{k = -N/2}^{N/2}$ are orthonormal with respect to the inner product defined as $<u, v> = \int_0^1 u(x) \overline{v(x)} dx$. 
+      \an{I guess above you mean $|k| \leq N/2$ instead of $|k| \leq N$.}
+      The set of Fourier Basis functions must also satisfy $\phi_k(x + 1) = \phi_k(x)$ for all $\abs{k} \leq N$ to ensure periodicity.
     \item Define a mapping from the interval $[0, 1]$ to $[0, 2 \pi]$ using a coordinate transformation such that the new coordinate $y$ satisfies $y \in [0, 2 \pi]$. Transform Equation \ref{eq:Q1_problem} in terms of $y$ and denote $v(y, t) = u(x, t)$ as the new solution variable. Use the orthonormal basis function $\phi_k(y) = e^{i k y}/\sqrt{2 \pi}$. This approach has been used to describe the application of the Fourier-Galerkin Scheme in Chapter $2$, Section $2.3$ of Shen, Tang and Wang. 
 \end{itemize}
 We describe the complete solution using the first approach stated above.
 
 We devise an orthonormal set of the Fourier Basis functions $\phi_k(x) = c_1 e^{ic_2 kx}$ where $c_1$ is a normalizing constant and $c_2$ is chosen to satisfy the periodicity condition $\phi_k(x + 1) = \phi_k(x)$ for all $k \in Z$. It is easy to observe that the choice of $c_2 = 2 \pi$ leads to $\phi_k(x + 1) = c_1 e^{i 2 \pi k (x + 1)} = c_1 e^{ i 2\pi k x } e^{i 2 \pi k} = \phi_k(x)$ since $e^{i 2 \pi k} = 1$ for all $k \in Z$. Furthermore, the orthonormality condition requires that $<\phi_k(x), \phi_k(x)> = 1$. We know that $<\phi_k(x), \phi_k(x)> = \int_{0}^{1} c_1 e^{i2 \pi kx} c_1 e^{-i2 \pi kx}dx = c_1^2$. Hence, we arrive at the condition $c_1 = 1$. As a result, our Fourier Basis functions take the form $ \phi_k(x) =  e^{i2 \pi kx}$.  
+\an{The above is fine, but I would be ok if you just asserted $\phi_k = e^{2 \pi i k x}$.}
 
 The Fourier Series Approximation of a function $u(x, t) \in L^2[0, 2 \pi )$ is given as $u(x, t) = \sum_{k = -\infty}^{\infty} \hat{u}_k(t) e^{ikx}$. To utilize the Fourier Galerkin Scheme with finite spatial discretization, we consider the use of a truncated Fourier series expansion with fixed number of modes $\abs{k} \leq N$. Since, a minimum of two points are required in the spatial domain to resolve the smallest wavelength, we use $M = 2N + 1$ points to discretize the spatial domain $[0, 1]$.
 
@@ -227,14 +232,15 @@ The results for both the explicit $RK4$ scheme and the implicit Crank Nicolson s
 \begin{figure}
     \centering
     \includegraphics[width=10cm]{Q1SolutionComparisont=0.001.png}
-    \caption{Solution plots for the RK4 and the Crank Nicolson Scheme at $t = 1.0$ and $N = 20$}
+    \caption{Solution plots for the RK4 and the Crank Nicolson Scheme at $t = 1.0$ and $N = 20$ \an{Since the solution values are so small, it's clear that I unfortunately chose the viscosity too large :(}}
     \label{fig:q1solutioncomp}
 \end{figure}
 The dissipative nature of the $u_{xx}/2$ term can be very easily observed from the plot since the initial solution value varying from $[-1, 1]$ dissipates to values ranging on the order of $1e-9$ at $t=1.0$. Furthermore, it is observed that the two solutions show excellent match despite the usage of different time steps for both the schemes. For the Crank Nicolson solution shown in Figure \ref{fig:q1solutioncomp}, a timestep of $0.00127$ was chosen while the maximum allowable timestep of $0.000352$ was used for the $RK4$ scheme. The unconditionally stable nature of the Crank Nicolson scheme allowed to take a timestep which was $3.59$ times greater than the timestep used for the $RK4$ scheme while still showing excellent match with the $RK4$ solution. 
 
-Timing comparisons performed for the $RK4$ scheme and the Crank Nicolson scheme show a performance improvement by a factor of around $6$ for the Crank Nicolson scheme due to the larger allowable timestep. The performance improvements became more noticeable at higher values of $N$ despite the cost of a matrix inversion for the implicit Crank Nicolson scheme. It must also be noted that the current implementation of the RK4 scheme is inefficient and requires the usage of multiple matrix vector products. On the other hand, there is only one matrix vector product performed for the Crank Nicolson scheme per timestep after the initial computation of the matrix inverse. This also causes the RK4 scheme to take more time than expected. 
+Timing comparisons performed for the $RK4$ scheme and the Crank Nicolson scheme show a performance improvement by a factor of around $6$ for the Crank Nicolson scheme due to the larger allowable timestep. The performance improvements became more noticeable at higher values of $N$ despite the cost of a matrix inversion for the implicit Crank Nicolson scheme. It must also be noted that the current implementation of the RK4 scheme is inefficient and requires the usage of multiple matrix vector products. On the other hand, there is only one matrix vector product performed for the Crank Nicolson scheme per timestep after the initial computation of the matrix inverse. This also causes the RK4 scheme to take more time than expected. \an{I wouldn't call your RK4 implementation that inefficient. You generally can't circumvent the required number of matvec operations.}
 
 Further analysis was performed by increasing the timestep value for the implicit Crank Nicolson scheme and comparing the obtained solution values with the explicit $RK4$ scheme. The results can be seen in Figure \ref{fig:CNTimestep}. Although the Crank Nicolson scheme shows stable behavior for these timestep values, the added stability comes at the cost of much higher dissipation of the solution values. Hence, although it might be possible to use very large timestep values for the implicit Crank Nicolson scheme, the obtained solution values might not be accurate. Furthermore, although, explicit schemes suffer from timestep limitations, for non linear and highly time accurate computations, the explicit schemes might provide faster solution values owing to no requirement of a matrix inversion.
+\an{In this particular case the system defined by the Crank-Nicolson solver is tridiagonal, so inverting it is actually (asymptotically) just as inexpensive as computing a single vector dot product; so here if you optimize everything, it will still be the case that CN is much more efficient. (For example, your code computes a dense inverse for CN, which is technically not necessary, but is certainly the easiest thing to code.)}
 \begin{figure}
 \centering
     \subfloat[\centering $\Delta t_{CN} = 14 \times \Delta t_{RK4}$ ]{{\includegraphics[width=8cm]{Q1SolutionComparisont=0.005.png} }}%
@@ -262,7 +268,9 @@ It is possible to differentiate the Lagrange interpolating polynomial term by te
 \label{eq:Q2:explicit_collocation}     
 \end{equation}
 \subsection{(a)}
-Consider an explicit time stepping scheme for the solution of Equation \ref{eq:Q2:explicit_collocation}. The explicit schemes for the semi discrete formulation suffer from a time stepping restriction based on the eigenvalues of the spatial discretization operator. In the present case, it is observed that the eigenvalues of the spatial discretization of $u_{xxx}$ scale as $O(N^3)$. In other words, $u_{xxx}$ is a stiff term. Observing the maximum possible timestep for the Forward Euler discretization of $U_t = -\Tilde{D}_3 U$ from Figure \ref{fig:uxxxtime}, it is observed that the time step scales as $O(1/N^3)$. Hence, explicit time stepping might become infeasible for large sized problems due to severe time stepping restrictions.
+Consider an explicit time stepping scheme for the solution of Equation \ref{eq:Q2:explicit_collocation}. The explicit schemes for the semi discrete formulation suffer from a time stepping restriction based on the eigenvalues of the spatial discretization operator. In the present case, it is observed that the eigenvalues of the spatial discretization of $u_{xxx}$ scale as $O(N^3)$. In other words, $u_{xxx}$ is a stiff term. 
+\an{You're right that this is a stiff term with an $O(N^{-3})$ penalty, but I don't see how Figure \ref{fig:uxxxtime} shows this...there are just two data points.}
+Observing the maximum possible timestep for the Forward Euler discretization of $U_t = -\Tilde{D}_3 U$ from Figure \ref{fig:uxxxtime}, it is observed that the time step scales as $O(1/N^3)$. Hence, explicit time stepping might become infeasible for large sized problems due to severe time stepping restrictions.
 \begin{figure}
     \centering
     \includegraphics[width=10cm]{Q2Timestep_uxxx.png}
@@ -351,7 +359,7 @@ Solution results were also plotted for $N = 20$ at $t = 1.0$. It turns out that 
 \end{figure}
 
 \section{Appendix}
-Simulations were performed to compute the solution of $u_t + sin(2 \pi x)u_x = 0$ at different times using the Fourier Galerkin Scheme presented in Question $1$. The Equation $u_t + sin(2 \pi x)u_x = 0$ could be obtained by simply removing the $u_{xx}$ term for the problem stated in Question $1$. It turns out that the exact solution to the equation involves a discontinuity even when the initial data is smooth $(u(x, 0) = sin(2 \pi x))$. Figure \ref{fig:app:uxplot} shows the Fourier Galerkin solution at different times.
+Simulations were performed to compute the solution of $u_t + sin(2 \pi x)u_x = 0$ at different times using the Fourier Galerkin Scheme presented in Question $1$. The Equation $u_t + sin(2 \pi x)u_x = 0$ could be obtained by simply removing the $u_{xx}$ term for the problem stated in Question $1$. It turns out that the exact solution to the equation involves a discontinuity even when the initial data is smooth $(u(x, 0) = sin(2 \pi x))$. Figure \ref{fig:app:uxplot} shows the Fourier Galerkin solution at different times. \an{This is not true -- the solution actually remains smooth, but the transition region simply becomes smaller and smaller; when it's too small, a truncated Fourier series simply cannot represent such things accurately. The reason you develop oscillations is due to the fact that for the true (infinite-dimensional) solution, those oscillations would be counteracted with oscillations from basis functions outside the Galerkin space. But since those modes are truncated, the oscillations are apparent. (You mention something similar to this below.)}
 
 It is observed that as soon as the discontinuity forms, spurious oscillations are observed. This possibly reflects the lack of positivity for the Fourier Galerkin scheme which shows oscillatory behavior in the presence of discontinuities. This also might possibly reflect that the truncated Fourier series discretization is unable to represent the discontinuous solution as is observed for the truncated Fourier Series expansion for a step function where the spectrum is spread across the entire frequency range.
 \begin{figure}
